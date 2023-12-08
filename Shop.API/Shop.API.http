@@ -1,0 +1,6 @@
+@Shop.API_HostAddress = http://localhost:5148
+
+GET {{Shop.API_HostAddress}}/api/
+Accept: application/json
+
+###
