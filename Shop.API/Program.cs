@@ -1,9 +1,10 @@
-using System.Globalization;
 using Microsoft.AspNetCore.Authentication.Negotiate;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
 using Shop.API.Data;
+using Shop.API.Repositories.Implementation;
+using Shop.API.Repositories.Interface;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,13 +38,20 @@ builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("MusicShopDb")));
 
-builder.Services.AddAuthorization(options =>
-{
-    // By default, all incoming requests will be authorized according to the default policy.
-    options.FallbackPolicy = options.DefaultPolicy;
-});
+// Repositories
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IImageRepository, ImageRepository>();
 
 var app = builder.Build();
+
+app.UseCors(options =>
+{
+    options.AllowAnyHeader();
+    options.AllowAnyOrigin();
+    options.AllowAnyMethod();
+});
 
 // Configure the HTTP request pipeline.
 app.UseSwagger();
@@ -51,9 +59,14 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+// For static images display from concerned folder
+app.UseStaticFiles(new StaticFileOptions
 {
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "Images")),
+    RequestPath = "/Images/Products/Guitars"
+});
+
+
+app.MapControllers();
+
+app.Run();
